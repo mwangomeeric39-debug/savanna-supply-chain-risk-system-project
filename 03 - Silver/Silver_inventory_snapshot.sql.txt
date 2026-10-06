@@ -1,0 +1,37 @@
+CREATE OR REPLACE TABLE supply_alert_catalog.silver. inventory_snapshots AS
+with src as (
+select * from supply_alert_catalog.bronze.inventory_snapshots),
+
+cleaned as (
+   select
+        to_date(snapshot_date, 'dd/MM/yyyy') as snapshot_date,
+        upper(trim(location_id)) as location_id,
+        upper(trim(sku)) as sku,
+        try_cast(on_hand_qty as integer) as on_hand_raw,
+        try_cast(on_order_qty as integer) as on_order_qty,
+        try_cast(backorder_qty as integer) as backorder_qty
+
+    from src),
+
+
+ranked as (
+select  *, row_number() over ( partition by snapshot_date, location_id, sku
+order by on_hand_raw desc) as rn
+from cleaned),
+
+deduped as (
+ select * from ranked
+  where rn = 1),
+
+with_prev as (
+select *, lag(on_hand_raw) over ( partition by location_id, sku order by snapshot_date) as prev_on_hand
+from deduped)
+
+select snapshot_date, location_id, sku,
+case when on_hand_raw < 0  then greatest(coalesce(prev_on_hand, 0), 0)
+else on_hand_raw  end as on_hand_qty,
+on_order_qty,
+backorder_qty,
+(on_hand_raw < 0) as had_negative_on_hand
+
+from with_prev

@@ -1,0 +1,12 @@
+owner_id,owner_name,role,email,scope_type,scope_id
+OWN-01,Wanjiru Kamau,Inventory Planner,wanjiru.kamau@savanna-demo.example,location,LOC-NBO
+OWN-02,Otieno Odhiambo,Inventory Planner,otieno.odhiambo@savanna-demo.example,location,LOC-MSA
+OWN-03,Achieng Akinyi,Inventory Planner,achieng.akinyi@savanna-demo.example,location,LOC-KSM
+OWN-04,Hassan Mwinyi,Procurement Officer,hassan.mwinyi@savanna-demo.example,supplier,SUP-01
+OWN-04,Hassan Mwinyi,Procurement Officer,hassan.mwinyi@savanna-demo.example,supplier,SUP-02
+OWN-04,Hassan Mwinyi,Procurement Officer,hassan.mwinyi@savanna-demo.example,supplier,SUP-03
+OWN-04,Hassan Mwinyi,Procurement Officer,hassan.mwinyi@savanna-demo.example,supplier,SUP-04
+OWN-05,Grace Wambui,Procurement Officer,grace.wambui@savanna-demo.example,supplier,SUP-05
+OWN-05,Grace Wambui,Procurement Officer,grace.wambui@savanna-demo.example,supplier,SUP-06
+OWN-05,Grace Wambui,Procurement Officer,grace.wambui@savanna-demo.example,supplier,SUP-07
+OWN-05,Grace Wambui,Procurement Officer,grace.wambui@savanna-demo.example,supplier,SUP-08

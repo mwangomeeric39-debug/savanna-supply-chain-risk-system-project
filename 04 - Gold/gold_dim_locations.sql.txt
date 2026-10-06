@@ -1,0 +1,11 @@
+create or replace table supply_alert_catalog.gold.dim_location as 
+
+select l.location_id, 
+l.location_name, 
+l.region,
+o.owner_id as planner_owner_id, 
+o.owner_name as planner_name, 
+o.email as planner_email
+from supply_alert_catalog.silver.locations l
+left join supply_alert_catalog.silver.action_owners o 
+on o.scope_type = 'location' and o.scope_id = l.location_id

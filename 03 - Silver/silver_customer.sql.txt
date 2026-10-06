@@ -1,0 +1,8 @@
+create or replace table supply_alert_catalog.silver.customers as 
+
+select upper(trim(customer_id)) as customer_id,
+trim(customer_name) as customer_name,
+trim(segment) as segment,
+upper(trim(location_id)) as location_id
+
+from supply_alert_catalog.bronze.customers

@@ -1,0 +1,13 @@
+create or replace table supply_alert_catalog.gold.dim_suppliers as 
+
+select s.supplier_id, 
+s.supplier_name, 
+s.country, 
+s.contracted_lead_time_days, 
+s.payment_terms_days,
+o.owner_id as procurement_owner_id, 
+o.owner_name as procurement_owner_name, 
+o.email as procurement_owner_email
+from supply_alert_catalog.silver.suppliers s
+left join supply_alert_catalog.silver.action_owners o 
+on o.scope_type = 'supplier' and o.scope_id = s.supplier_id

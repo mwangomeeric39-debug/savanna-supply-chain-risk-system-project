@@ -1,0 +1,12 @@
+Savanna P1 Risk Summary
+
+The System has detected the following P1 supply chain risks:
+
+{{ $json.alert_key }}-{{ $json.sku }}-{{ $json.location_id }}
+
+Impact : KES {{ $json.impact_value }}
+Urgence : {{ $json.urgency_score }}
+Severity:{{ $json.severity }}
+Owner : {{ $json.owner_name }}
+Reason : {{ $json.reason }}
+Recommended Action : {{ $json.recommended_action }}

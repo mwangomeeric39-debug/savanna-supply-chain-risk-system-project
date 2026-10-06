@@ -1,0 +1,114 @@
+CREATE OR REPLACE TABLE supply_alert_catalog.intermediate.int_supplier_perf_daily AS
+
+
+WITH grid AS (
+    SELECT
+        d.date_day,
+        s.supplier_id,
+        s.contracted_lead_time_days
+FROM supply_alert_catalog.gold.dim_dates d
+CROSS JOIN supply_alert_catalog.gold.dim_suppliers s),
+
+po AS (
+SELECT supplier_id, received_date, actual_lead_time_days, days_late_vs_expected,
+CASE WHEN is_late THEN 1.0 ELSE 0.0 END AS late_flag,
+fill_rate
+FROM supply_alert_catalog.gold.fact_purchase_orders
+WHERE is_valid_for_leadtime = TRUE),
+
+j AS (
+SELECT
+        g.date_day,
+        g.supplier_id,
+        g.contracted_lead_time_days,
+
+        po.received_date,
+        po.actual_lead_time_days,
+        po.days_late_vs_expected,
+        po.late_flag,
+        po.fill_rate,
+
+        -- Recent supplier performance window: 90 days
+        CASE WHEN po.received_date >= DATEADD(DAY, -90, g.date_day)
+        THEN 1 ELSE 0 END AS in90,
+
+        -- Short-term performance window: 30 days
+        CASE WHEN po.received_date >= DATEADD(DAY, -30, g.date_day)
+        THEN 1 ELSE 0 END AS in_short
+FROM grid g
+LEFT JOIN po
+ON po.supplier_id = g.supplier_id AND po.received_date < g.date_day
+AND po.received_date >= DATEADD(DAY,-(30 + 180),g.date_day)),
+
+agg AS (
+SELECT
+        date_day,
+        supplier_id,
+        contracted_lead_time_days,
+
+        -- Recent 90-day performance
+        SUM(in90) AS recent_po_count,
+
+        AVG(CASE WHEN in90 = 1 THEN actual_lead_time_days END) AS recent_avg_lead_time_days,
+        AVG(CASE WHEN in90 = 1 THEN days_late_vs_expected END) AS recent_avg_delay_days,
+        AVG(CASE WHEN in90 = 1 THEN late_flag END) AS recent_pct_late,
+        AVG(CASE WHEN in90 = 1 THEN fill_rate END) AS recent_avg_fill_rate,
+
+        -- Short-term 30-day performance
+        SUM(in_short) AS short_po_count,
+
+        AVG(CASE WHEN in_short = 1 THEN days_late_vs_expected END) AS short_avg_delay_days,
+        AVG(CASE WHEN in_short = 1 THEN late_flag END) AS short_pct_late,
+
+        -- Historical baseline: period before the recent 30 days
+        SUM(CASE WHEN in_short = 0 AND received_date IS NOT NULL 
+            THEN 1 ELSE 0 END) AS base_po_count,
+
+        AVG(CASE WHEN in_short = 0 THEN days_late_vs_expected END) AS base_avg_delay_days,
+        AVG(CASE WHEN in_short = 0 THEN late_flag END) AS base_pct_late
+
+FROM j
+GROUP BY date_day, supplier_id, contracted_lead_time_days),
+
+flagged AS (
+SELECT *,
+        -- How much has average delay changed?
+        short_avg_delay_days - base_avg_delay_days
+            AS delay_change_days,
+
+        -- How much has the late percentage changed?
+        short_pct_late - base_pct_late
+            AS pct_late_change,
+
+        -- Deterioration rule
+        CASE
+            WHEN short_po_count >= 5
+             AND base_po_count >= 15
+             AND short_avg_delay_days - base_avg_delay_days >= 2.0
+             AND short_pct_late - base_pct_late >= 0.25
+            THEN 1
+            ELSE 0
+        END AS is_deteriorating,
+
+        -- Chronic lateness rule
+        CASE
+            WHEN short_po_count >= 5
+             AND short_avg_delay_days >= 4.0
+             AND short_pct_late >= 0.60
+            THEN 1
+            ELSE 0
+        END AS is_chronically_late
+
+    FROM agg)
+
+SELECT *,
+    -- Require deterioration to persist for 5 consecutive days
+    CASE
+        WHEN SUM(is_deteriorating) OVER (
+            PARTITION BY supplier_id
+            ORDER BY date_day
+            ROWS BETWEEN 4 PRECEDING AND CURRENT ROW) = 5
+        THEN 1 ELSE 0
+    END AS is_deteriorating_sustained
+
+FROM flagged;

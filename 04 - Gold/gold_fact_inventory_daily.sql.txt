@@ -1,0 +1,26 @@
+create or replace table supply_alert_catalog.gold.fact_inventory_daily as 
+
+with demand as (
+    select order_date as snapshot_date, 
+    location_id, sku,
+    sum(qty_ordered) as units_demanded, 
+    count(*) as order_lines
+    from supply_alert_catalog.silver.order_lines
+    group by order_date, location_id, sku)
+
+select
+    s.snapshot_date, 
+    s.location_id, 
+    s.sku,
+    s.on_hand_qty, 
+    s.on_order_qty, 
+    s.backorder_qty,
+    coalesce(d.units_demanded, 0) as units_demanded,
+    coalesce(d.order_lines, 0) as order_lines,
+    s.on_hand_qty * p.unit_cost as stock_value,
+    case when s.on_hand_qty = 0 or s.backorder_qty > 0 then 1 else 0 end as is_stockout
+from supply_alert_catalog.silver.inventory_snapshots s
+join supply_alert_catalog.gold.dim_products p 
+on p.sku = s.sku
+left join demand d 
+on d.snapshot_date = s.snapshot_date and d.location_id = s.location_id and d.sku = s.sku

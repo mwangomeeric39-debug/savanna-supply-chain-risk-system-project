@@ -1,0 +1,28 @@
+CREATE OR REPLACE TABLE supply_alert_catalog.silver. purchase_orders AS
+
+with src as (select * from supply_alert_catalog.bronze.purchase_orders),
+
+cleaned as (
+select trim(po_id) as po_id,
+to_date(po_date, 'dd/MM/yyyy') as po_date,
+upper(trim(supplier_id)) as supplier_id,
+upper(trim(sku)) as sku,
+upper(trim(location_id)) as location_id,
+try_cast(qty_ordered as integer) as qty_ordered,
+to_date(expected_date, 'dd/MM/yyyy') as expected_date,
+to_date(received_date, 'dd/MM/yyyy') as received_raw,
+try_cast(qty_received as integer) as qty_received
+from src),
+
+ranked as (
+select *, row_number() over (partition by po_id order by po_date) as rn
+from cleaned)
+
+select po_id, po_date, supplier_id,sku, location_id, qty_ordered, expected_date, qty_received,
+case when received_raw < po_date then least(expected_date, current_date())
+else received_raw
+end as received_date,
+(received_raw < po_date) as is_received_date_imputed
+
+from ranked
+where rn = 1

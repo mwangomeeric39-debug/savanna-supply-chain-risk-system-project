@@ -1,0 +1,75 @@
+CREATE OR REPLACE TABLE supply_alert_catalog.silver. order_lines AS
+
+
+WITH src AS (
+    SELECT *
+    FROM supply_alert_catalog.bronze.order_lines),
+
+cleaned AS (
+    SELECT
+        TRIM(order_id) AS order_id,
+        TRY_CAST(line_no AS INT) AS line_no,
+
+        TRY_TO_DATE(order_date, 'dd/MM/yyyy') AS order_date,
+
+        UPPER(TRIM(customer_id)) AS customer_id,
+        UPPER(TRIM(sku)) AS sku,
+        UPPER(TRIM(location_id)) AS location_id,
+
+        TRY_CAST(qty_ordered AS INT) AS qty_ordered,
+        TRY_CAST(qty_shipped AS INT) AS qty_shipped,
+        TRY_CAST(unit_price AS DECIMAL(12,2)) AS unit_price,
+
+        TRY_TO_DATE(promised_date, 'dd/MM/yyyy') AS promised_date,
+        TRY_TO_DATE(ship_date, 'dd/MM/yyyy') AS ship_date,
+        TRY_TO_DATE(delivered_date, 'dd/MM/yyyy') AS delivered_date,
+
+        CASE LOWER(TRIM(order_status))
+            WHEN 'delivered' THEN 'Delivered'
+            WHEN 'shipped' THEN 'Shipped'
+            WHEN 'backordered' THEN 'Backordered'
+            WHEN 'open' THEN 'Open'
+            WHEN 'cancelled' THEN 'Cancelled'
+            ELSE 'Unknown'
+        END AS order_status
+
+    FROM src),
+
+
+ranked AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY order_id, line_no
+            ORDER BY order_date
+        ) AS rn
+    FROM cleaned)
+
+
+
+
+
+
+
+SELECT
+    order_id,
+    line_no,
+    order_date,
+    customer_id,
+    sku,
+    location_id,
+    qty_ordered,
+    qty_shipped,
+    unit_price,
+    promised_date,
+    ship_date,
+    delivered_date,
+    order_status,
+
+    (
+        order_status = 'Delivered'
+        AND delivered_date IS NULL
+    ) AS is_delivered_date_missing
+
+FROM ranked
+WHERE rn = 1;

@@ -1,0 +1,7 @@
+CREATE OR REPLACE TABLE supply_alert_catalog.silver.suppliers AS
+select upper(trim(supplier_id)) as supplier_id, 
+trim(supplier_name) as supplier_name, 
+trim(country) as country,
+try_cast(contracted_lead_time_days as integer) as contracted_lead_time_days,
+try_cast(payment_terms_days as integer) as payment_terms_days
+from supply_alert_catalog.bronze.suppliers

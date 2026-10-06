@@ -1,0 +1,31 @@
+create or replace table supply_alert_catalog.gold.fact_order_lines as 
+SELECT
+    order_id,
+    line_no,
+    order_date,
+    promised_date,
+    ship_date,
+    delivered_date,
+    customer_id,
+    sku,
+    location_id,
+    order_status,
+    qty_ordered,
+    qty_shipped,
+    unit_price,
+    qty_ordered * unit_price AS line_value,
+    CASE WHEN order_status = 'Cancelled' THEN qty_ordered * unit_price
+    ELSE 0 END AS lost_sales_value,
+    CASE WHEN ship_date IS NOT NULL THEN DATEDIFF(ship_date, order_date)
+    END AS days_to_ship,
+    CASE WHEN delivered_date IS NOT NULL THEN DATEDIFF(delivered_date, promised_date)
+    END AS days_vs_promise,
+    CASE WHEN delivered_date IS NOT NULL AND delivered_date > promised_date THEN 1
+    ELSE 0 END AS is_late_delivery,
+    CASE WHEN delivered_date IS NOT NULL THEN 1
+    ELSE 0 END AS has_delivery_outcome,
+    CASE WHEN ship_date IS NOT NULL AND ship_date > order_date THEN 1
+    ELSE 0 END AS was_backordered,
+    is_delivered_date_missing
+
+FROM supply_alert_catalog.silver.order_lines

@@ -1,0 +1,41 @@
+sku,product_name,category,unit_cost,unit_price,criticality,supplier_id
+SKU-001,Maize Flour 2kg,Staples,1407.0,1687.0,C,SUP-01
+SKU-002,Long Grain Rice 5kg,Staples,1273.0,1447.0,A,SUP-02
+SKU-003,White Sugar 2kg,Staples,1384.0,1746.0,B,SUP-03
+SKU-004,Cooking Oil 3L,Staples,844.0,1002.0,B,SUP-04
+SKU-005,Wheat Flour 2kg,Staples,1180.0,1496.0,C,SUP-05
+SKU-006,Table Salt 1kg,Staples,455.0,555.0,C,SUP-06
+SKU-007,Dry Beans 1kg,Staples,1500.0,1851.0,C,SUP-07
+SKU-008,Black Tea 500g,Staples,677.0,877.0,A,SUP-08
+SKU-009,Bottled Water 500ml x24,Beverages,1414.0,1633.0,B,SUP-01
+SKU-010,Orange Juice 1L x12,Beverages,136.0,156.0,A,SUP-02
+SKU-011,Soda 300ml x24,Beverages,1356.0,1755.0,B,SUP-03
+SKU-012,Energy Drink 250ml x24,Beverages,705.0,849.0,B,SUP-04
+SKU-013,Instant Coffee 200g,Beverages,286.0,345.0,A,SUP-05
+SKU-014,Drinking Chocolate 400g,Beverages,1225.0,1468.0,A,SUP-06
+SKU-015,Milk Long Life 1L x12,Beverages,1508.0,1907.0,C,SUP-07
+SKU-016,Ginger Drink 500ml x12,Beverages,562.0,698.0,B,SUP-08
+SKU-017,Laundry Powder 2kg,Household,408.0,458.0,B,SUP-01
+SKU-018,Dish Soap 750ml,Household,1217.0,1518.0,B,SUP-02
+SKU-019,Bleach 1L,Household,859.0,1050.0,C,SUP-03
+SKU-020,Floor Cleaner 1L,Household,259.0,321.0,A,SUP-04
+SKU-021,Toilet Tissue x10,Household,1044.0,1313.0,C,SUP-05
+SKU-022,Bar Soap 800g,Household,1023.0,1249.0,C,SUP-06
+SKU-023,Insecticide Spray 300ml,Household,114.0,137.0,B,SUP-07
+SKU-024,Sponge Scourers x10,Household,771.0,982.0,A,SUP-08
+SKU-025,Body Lotion 400ml,Personal Care,161.0,188.0,C,SUP-01
+SKU-026,Toothpaste 100ml,Personal Care,1212.0,1479.0,B,SUP-02
+SKU-027,Shampoo 400ml,Personal Care,1216.0,1451.0,A,SUP-03
+SKU-028,Deodorant Roll-on 50ml,Personal Care,351.0,395.0,A,SUP-04
+SKU-029,Sanitary Pads x16,Personal Care,1317.0,1585.0,C,SUP-05
+SKU-030,Baby Diapers x40,Personal Care,932.0,1069.0,C,SUP-06
+SKU-031,Hand Sanitizer 500ml,Personal Care,836.0,994.0,C,SUP-07
+SKU-032,Petroleum Jelly 250g,Personal Care,1157.0,1371.0,C,SUP-08
+SKU-033,Shopping Bags x100,Packaging & Stationery,265.0,343.0,B,SUP-01
+SKU-034,Cling Film 30m,Packaging & Stationery,1277.0,1491.0,C,SUP-02
+SKU-035,Foil Wrap 10m,Packaging & Stationery,1415.0,1767.0,B,SUP-03
+SKU-036,Exercise Books x12,Packaging & Stationery,534.0,607.0,B,SUP-04
+SKU-037,Ballpoint Pens x50,Packaging & Stationery,853.0,986.0,C,SUP-05
+SKU-038,Packing Tape x6,Packaging & Stationery,1068.0,1230.0,C,SUP-06
+SKU-039,Paper Napkins x200,Packaging & Stationery,1380.0,1724.0,C,SUP-07
+SKU-040,Disposable Cups x50,Packaging & Stationery,1152.0,1411.0,B,SUP-08

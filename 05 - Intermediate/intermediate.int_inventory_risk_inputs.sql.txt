@@ -1,0 +1,79 @@
+CREATE OR REPLACE TABLE supply_alert_catalog.intermediate.int_inventory_risk_inputs AS
+
+WITH e AS (
+SELECT*,
+        
+        -- Business rule:
+        -- If an open PO exists, estimate replenishment time using:
+        -- days until the next expected PO
+        -- + recent supplier delay
+        -- Minimum = 1 day.
+        CASE WHEN open_po_count > 0 THEN GREATEST(
+        DATEDIFF(next_expected_date, snapshot_date) + GREATEST(supplier_recent_delay_days, 0),1)
+        ELSE lead_time_used
+        END AS days_to_replenish_refined
+
+FROM supply_alert_catalog.intermediate.int_inventory_enriched
+
+    -- Business parameter:
+    -- Require at least 14 days of demand history
+    -- before using the SKU for inventory risk analysis.
+WHERE history_days >= 14
+AND avg_daily_demand > 0)
+
+SELECT
+    snapshot_date,
+    location_id,
+    sku,
+    supplier_id,
+    criticality,
+    criticality_weight,
+    unit_price,
+    unit_margin,
+    on_hand_qty,
+    backorder_qty,
+    is_stockout,
+    avg_daily_demand,
+    days_of_cover,
+    open_po_count,
+    open_po_qty,
+    next_expected_date,
+-- Basic replenishment assumption
+    lead_time_used AS days_to_replenish_basic,
+-- Refined replenishment estimate
+    days_to_replenish_refined,
+
+    supplier_is_deteriorating,
+
+-- How much inventory cover remains after accounting
+-- for normal supplier lead time.
+    days_of_cover - lead_time_used AS gap_basic,
+
+-- Same comparison using the refined replenishment estimate.
+    days_of_cover - days_to_replenish_refined AS gap_refined,
+
+-- Basic inventory risk classification
+    CASE 
+    WHEN is_stockout = 1 THEN 'Stocked out'
+    WHEN days_of_cover - lead_time_used < 0 THEN 'Critical'
+
+-- Business parameter:
+-- 2-day buffer before inventory becomes critical.
+    WHEN days_of_cover - lead_time_used < 2 THEN 'Warning'
+
+    ELSE NULL
+    END AS severity_basic,
+
+-- Refined inventory risk classification
+    CASE 
+    WHEN is_stockout = 1 THEN 'Stocked out'
+    WHEN days_of_cover - days_to_replenish_refined < 0 THEN 'Critical'
+
+-- Business parameter:
+-- 2-day warning buffer.
+    WHEN days_of_cover - days_to_replenish_refined < 2 THEN 'Warning'
+    
+    ELSE NULL
+    END AS severity_refined
+
+FROM e;

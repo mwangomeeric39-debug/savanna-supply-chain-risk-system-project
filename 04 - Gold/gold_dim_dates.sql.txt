@@ -1,0 +1,13 @@
+create or replace table supply_alert_catalog.gold.dim_dates as 
+
+SELECT
+    date_day,
+    YEAR(date_day) AS year_num,
+    QUARTER(date_day) AS quarter_num,
+    MONTH(date_day) AS month_num,
+    DATE_TRUNC('MONTH', date_day) AS month_start,
+    DATE_TRUNC('WEEK', date_day) AS week_start,
+    DATE_FORMAT(date_day, 'EEEE') AS weekday_name
+
+FROM (SELECT Distinct snapshot_date AS date_day
+    FROM supply_alert_catalog.silver.inventory_snapshots) d;

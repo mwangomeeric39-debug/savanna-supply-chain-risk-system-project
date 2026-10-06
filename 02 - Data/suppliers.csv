@@ -1,0 +1,9 @@
+supplier_id,supplier_name,country,contracted_lead_time_days,payment_terms_days
+SUP-01,Rift Valley Millers Ltd,Kenya,7,30
+SUP-02,Lakeshore Beverages Co,Kenya,10,30
+SUP-03,Kilimanjaro Trading Ltd,Tanzania,14,45
+SUP-04,Nile Basin Packaging,Uganda,5,14
+SUP-05,Gulf Household Imports,UAE,18,60
+SUP-06,Savannah Personal Care,Kenya,9,30
+SUP-07,Coastal Foods Africa,Kenya,12,30
+SUP-08,Indus Staples Exports,India,21,60

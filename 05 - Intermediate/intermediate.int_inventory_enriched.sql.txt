@@ -1,0 +1,86 @@
+CREATE OR REPLACE TABLE supply_alert_catalog.intermediate.int_inventory_enriched AS
+
+WITH base AS (
+    SELECT
+        f.*,
+        p.criticality,
+        p.supplier_id,
+        p.unit_price,
+        p.unit_margin,
+        p.criticality_weight,
+
+        -- Business parameter:
+        -- Use the previous 28 days to estimate average daily demand.
+        AVG(f.units_demanded) OVER (PARTITION BY f.sku, f.location_id
+        ORDER BY f.snapshot_date
+        ROWS BETWEEN 28 PRECEDING AND 1 PRECEDING) AS avg_daily_demand,
+
+        -- Number of historical inventory observations
+        -- available before the current snapshot date.
+        COUNT(*) OVER (PARTITION BY f.sku, f.location_id ORDER BY f.snapshot_date
+        ROWS BETWEEN 28 PRECEDING AND 1 PRECEDING) AS history_days
+    FROM supply_alert_catalog.gold.fact_inventory_daily f
+    JOIN supply_alert_catalog.gold.dim_products p
+    ON p.sku = f.sku),
+
+open_po AS (
+SELECT
+        b.snapshot_date,
+        b.location_id,
+        b.sku,
+        COUNT(*) AS open_po_count,
+        SUM(po.qty_ordered) AS open_po_qty,
+        MIN(po.expected_date) AS next_expected_date
+    FROM base b
+    JOIN supply_alert_catalog.gold.fact_purchase_orders po
+        ON po.sku = b.sku
+        AND po.location_id = b.location_id
+        -- PO must already exist by the snapshot date
+        AND po.po_date <= b.snapshot_date
+        -- PO must still be open at that snapshot date
+        AND (po.received_date IS NULL OR po.received_date > b.snapshot_date)
+    GROUP BY b.snapshot_date, b.location_id, b.sku)
+
+SELECT
+    b.snapshot_date,
+    b.location_id,
+    b.sku,
+
+    b.supplier_id,
+    b.criticality,
+    b.criticality_weight,
+
+    b.unit_price,
+    b.unit_margin,
+
+    b.on_hand_qty,
+    b.backorder_qty,
+    b.is_stockout,
+    b.stock_value,
+
+    b.units_demanded,
+    b.avg_daily_demand,
+    b.history_days,
+
+    -- Open purchase order evidence
+    COALESCE(o.open_po_count, 0) AS open_po_count,
+    COALESCE(o.open_po_qty, 0) AS open_po_qty,
+    o.next_expected_date,
+
+    -- Supplier replenishment evidence
+    COALESCE(sp.recent_avg_lead_time_days,sp.contracted_lead_time_days) AS lead_time_used,
+    COALESCE(sp.recent_avg_delay_days,0) AS supplier_recent_delay_days,
+    sp.is_deteriorating AS supplier_is_deteriorating,
+
+    -- Inventory coverage
+    CASE WHEN b.avg_daily_demand > 0
+    THEN b.on_hand_qty / b.avg_daily_demand END AS days_of_cover
+
+FROM base b
+LEFT JOIN open_po o
+    ON o.snapshot_date = b.snapshot_date
+    AND o.location_id = b.location_id
+    AND o.sku = b.sku
+LEFT JOIN supply_alert_catalog.intermediate.int_supplier_perf_daily sp
+    ON sp.date_day = b.snapshot_date
+    AND sp.supplier_id = b.supplier_id;

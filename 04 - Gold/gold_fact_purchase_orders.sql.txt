@@ -1,0 +1,75 @@
+create or replace table supply_alert_catalog.gold.fact_purchase_orders as
+
+SELECT
+    po.po_id,
+    po.po_date,
+    po.expected_date,
+    po.received_date,
+    po.supplier_id,
+    po.sku,
+    po.location_id,
+    po.qty_ordered,
+    po.qty_received,
+
+    -- Expected supplier lead time
+    DATEDIFF(
+        po.expected_date,
+        po.po_date
+    ) AS expected_lead_time_days,
+
+    -- Actual lead time
+    -- Exclude imputed received dates from supplier performance calculations
+    CASE
+        WHEN po.received_date IS NOT NULL
+         AND NOT po.is_received_date_imputed
+        THEN DATEDIFF(
+            po.received_date,
+            po.po_date
+        )
+    END AS actual_lead_time_days,
+
+    -- How many days late was the delivery?
+    CASE
+        WHEN po.received_date IS NOT NULL
+         AND NOT po.is_received_date_imputed
+        THEN DATEDIFF(
+            po.received_date,
+            po.expected_date
+        )
+    END AS days_late_vs_expected,
+
+    -- Business parameter:
+    -- Allow 1 day of grace before classifying a PO as late.
+    CASE
+        WHEN po.received_date IS NOT NULL
+         AND NOT po.is_received_date_imputed
+        THEN
+            CASE
+                WHEN DATEDIFF(
+                    po.received_date,
+                    po.expected_date
+                ) > 1
+                THEN TRUE
+                ELSE FALSE
+            END
+    END AS is_late,
+
+    -- Percentage of ordered quantity that was received
+    CASE
+        WHEN po.qty_received IS NOT NULL
+        THEN po.qty_received * 1.0 / po.qty_ordered
+    END AS fill_rate,
+
+    -- PO is still open
+    po.received_date IS NULL AS is_open,
+
+    -- Only genuine received dates can be used
+    -- to measure supplier lead-time performance
+    (
+        po.received_date IS NOT NULL
+        AND NOT po.is_received_date_imputed
+    ) AS is_valid_for_leadtime,
+
+    po.is_received_date_imputed
+
+FROM supply_alert_catalog.silver.purchase_orders po;

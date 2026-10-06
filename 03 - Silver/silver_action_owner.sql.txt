@@ -1,0 +1,9 @@
+create or replace table supply_alert_catalog.silver.action_owners as
+
+select trim(owner_id) as owner_id,
+trim(owner_name) as owner_name,
+trim(role) as role,
+lower(trim(email)) as email,
+Trim(scope_type) as scope_type,
+upper(trim(scope_id)) as scope_id
+from supply_alert_catalog.bronze.action_owners

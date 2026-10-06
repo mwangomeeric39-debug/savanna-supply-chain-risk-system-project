@@ -1,0 +1,29 @@
+# Secrets and credentials
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Power BI local/cache files
+.pbi/
+.cache/

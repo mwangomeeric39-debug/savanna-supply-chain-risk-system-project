@@ -1,0 +1,208 @@
+CREATE OR REPLACE TABLE supply_alert_catalog.risk_engine.fact_risk_alerts AS
+
+WITH stockout AS (
+    SELECT
+        'Stockout risk' AS alert_type,
+        CONCAT(sku, '|', location_id) AS alert_key,
+        location_id,
+        sku,
+        supplier_id,
+        CASE WHEN is_stockout = 1 THEN 'Critical' ELSE severity_refined END AS severity,
+        CASE
+            WHEN is_stockout = 1 THEN days_to_replenish_refined
+            ELSE GREATEST(days_to_replenish_refined - days_of_cover, 0)
+        END * avg_daily_demand * unit_price * criticality_weight AS impact_value,
+        CASE
+            WHEN is_stockout = 1 THEN 5
+            WHEN days_of_cover <= 2 THEN 5
+            WHEN days_of_cover <= 4 THEN 4
+            WHEN days_of_cover <= 7 THEN 3
+            WHEN days_of_cover <= 14 THEN 2
+            ELSE 1
+        END AS urgency_score,
+        CASE
+            WHEN is_stockout = 1 THEN
+                CONCAT('Already out of stock or backordering; replenishment expected in ',
+                       CAST(ROUND(days_to_replenish_refined, 1) AS STRING), ' days')
+            ELSE
+                CONCAT('Cover ', CAST(ROUND(days_of_cover, 1) AS STRING),
+                       ' days vs ', CAST(ROUND(days_to_replenish_refined, 1) AS STRING),
+                       ' days to replenish (',
+                       CASE WHEN open_po_count > 0
+                            THEN CONCAT('open PO due ', CAST(next_expected_date AS STRING))
+                            ELSE 'no open PO'
+                       END, ')')
+        END AS reason,
+        CASE
+            WHEN is_stockout = 1 THEN 'Contact affected customers, expedite replenishment, review allocation'
+            WHEN severity_refined = 'Critical' THEN 'Expedite the open PO or raise an emergency order; consider a stock transfer'
+            ELSE 'Confirm the supplier delivery date; bring the next order forward'
+        END AS recommended_action
+    FROM supply_alert_catalog.intermediate.int_inventory_risk_inputs
+    WHERE snapshot_date = DATE '2026-09-28'
+      AND (is_stockout = 1 OR severity_refined IN ('Critical', 'Warning'))
+),
+
+supplier AS (
+    SELECT
+        'Supplier deterioration' AS alert_type,
+        p.supplier_id AS alert_key,
+        CAST(NULL AS STRING) AS location_id,
+        CAST(NULL AS STRING) AS sku,
+        p.supplier_id,
+        CASE WHEN p.short_avg_delay_days >= 7 THEN 'Critical' ELSE 'Warning' END AS severity,
+        COALESCE(x.open_value, 0) AS impact_value,
+        CASE WHEN p.short_avg_delay_days >= 7 THEN 5 ELSE 4 END AS urgency_score,
+        CASE
+            WHEN p.is_deteriorating_sustained = 1 THEN
+                CONCAT('Getting worse: last 30 days avg ',
+                       CAST(ROUND(p.short_avg_delay_days, 1) AS STRING),
+                       ' days late (own baseline ',
+                       CAST(ROUND(p.base_avg_delay_days, 1) AS STRING),
+                       '), ',
+                       CAST(ROUND(p.short_pct_late * 100, 0) AS STRING),
+                       '% of POs late (baseline ',
+                       CAST(ROUND(p.base_pct_late * 100, 0) AS STRING), '%)')
+            ELSE
+                CONCAT('Chronically late: last 30 days avg ',
+                       CAST(ROUND(p.short_avg_delay_days, 1) AS STRING),
+                       ' days late, ',
+                       CAST(ROUND(p.short_pct_late * 100, 0) AS STRING),
+                       '% of POs late')
+        END AS reason,
+        'Review the supplier with procurement; expedite open POs; qualify a backup supplier' AS recommended_action
+    FROM supply_alert_catalog.intermediate.int_supplier_perf_daily p
+    LEFT JOIN (
+        SELECT
+            po.supplier_id,
+            SUM(po.qty_ordered * pr.unit_cost) AS open_value
+        FROM supply_alert_catalog.gold.fact_purchase_orders po
+        JOIN supply_alert_catalog.gold.dim_products pr ON pr.sku = po.sku
+        WHERE po.is_open = TRUE
+        GROUP BY po.supplier_id
+    ) x ON x.supplier_id = p.supplier_id
+    WHERE p.date_day = DATE '2026-09-28'
+      AND (p.is_deteriorating_sustained = 1 OR p.is_chronically_late = 1)
+),
+
+excess AS (
+    SELECT
+        'Excess inventory' AS alert_type,
+        CONCAT(sku, '|', location_id) AS alert_key,
+        location_id,
+        sku,
+        supplier_id,
+        'Watch' AS severity,
+        stock_value AS impact_value,
+        CASE WHEN days_of_cover > 300 THEN 3 ELSE 2 END AS urgency_score,
+        CONCAT('Stock covers ', CAST(ROUND(days_of_cover, 0) AS STRING),
+               ' days of demand; ', CAST(ROUND(stock_value, 0) AS STRING),
+               ' KES tied up') AS reason,
+        'Pause replenishment; run a promotion or transfer stock to a faster-moving location' AS recommended_action
+    FROM supply_alert_catalog.intermediate.int_inventory_enriched
+    WHERE snapshot_date = DATE '2026-09-28'
+      AND days_of_cover > 120
+      AND history_days >= 14
+),
+
+late AS (
+    SELECT
+        'Late delivery' AS alert_type,
+        CONCAT(l.order_id, '-', CAST(l.line_no AS STRING)) AS alert_key,
+        l.location_id,
+        l.sku,
+        pr.supplier_id,
+        CASE WHEN l.promised_date < DATE '2026-09-28' THEN 'Critical' ELSE 'Warning' END AS severity,
+        l.qty_ordered * l.unit_price AS impact_value,
+        CASE WHEN l.promised_date < DATE '2026-09-28' THEN 5 ELSE 4 END AS urgency_score,
+        CONCAT('Order ', l.order_id, ' is ', LOWER(l.order_status),
+               ', promised ', CAST(l.promised_date AS STRING)) AS reason,
+        'Confirm stock allocation and ship or update the customer' AS recommended_action
+    FROM supply_alert_catalog.gold.fact_order_lines l
+    JOIN supply_alert_catalog.gold.dim_products pr ON pr.sku = l.sku
+    WHERE l.order_status IN ('Open', 'Backordered')
+      AND l.promised_date <= DATEADD(DAY, 1, DATE '2026-09-28')
+),
+
+unioned AS (
+    SELECT * FROM stockout
+    UNION ALL
+    SELECT * FROM supplier
+    UNION ALL
+    SELECT * FROM excess
+    UNION ALL
+    SELECT * FROM late
+),
+
+scored AS (
+    SELECT
+        u.*,
+        CASE
+            WHEN impact_value < 5000 THEN 1
+            WHEN impact_value < 20000 THEN 2
+            WHEN impact_value < 60000 THEN 3
+            WHEN impact_value < 200000 THEN 4
+            ELSE 5
+        END AS impact_score
+    FROM unioned u
+),
+
+owned AS (
+    SELECT
+        s.*,
+        CASE WHEN s.alert_type = 'Supplier deterioration'
+             THEN sup.procurement_owner_id ELSE loc.planner_owner_id END AS owner_id,
+        CASE WHEN s.alert_type = 'Supplier deterioration'
+             THEN sup.procurement_owner_name ELSE loc.planner_name END AS owner_name,
+        CASE WHEN s.alert_type = 'Supplier deterioration'
+             THEN sup.procurement_owner_email ELSE loc.planner_email END AS owner_email
+    FROM scored s
+    LEFT JOIN supply_alert_catalog.gold.dim_suppliers sup
+        ON sup.supplier_id = s.supplier_id
+    LEFT JOIN supply_alert_catalog.gold.dim_location loc
+        ON loc.location_id = s.location_id
+),
+
+ranked AS (
+    SELECT
+        *,
+        impact_score * urgency_score AS priority_score
+    FROM owned
+),
+
+final_ranked AS (
+    SELECT
+        *,
+        CASE
+            WHEN priority_score >= 15 THEN 'P1'
+            WHEN priority_score >= 8 THEN 'P2'
+            ELSE 'P3'
+        END AS priority_band,
+        ROW_NUMBER() OVER (
+            PARTITION BY owner_id
+            ORDER BY priority_score DESC, impact_value DESC
+        ) AS rank_for_owner
+    FROM ranked
+)
+
+SELECT
+    DATE '2026-09-28' AS as_of_date,
+    alert_type,
+    alert_key,
+    severity,
+    location_id,
+    sku,
+    supplier_id,
+    ROUND(impact_value, 0) AS impact_value,
+    impact_score,
+    urgency_score,
+    priority_score,
+    priority_band,
+    reason,
+    recommended_action,
+    owner_id,
+    owner_name,
+    owner_email,
+    rank_for_owner,
+    CASE WHEN rank_for_owner <= 10 THEN TRUE ELSE FALSE END AS within_alert_budget
+FROM final_ranked;

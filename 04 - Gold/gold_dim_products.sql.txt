@@ -1,0 +1,12 @@
+create or replace table supply_alert_catalog.gold.dim_products as
+
+select sku, 
+product_name, 
+category, 
+unit_cost, 
+unit_price,
+(unit_price - unit_cost) as unit_margin,
+criticality,
+case criticality when 'A' then 1.5 when 'B' then 1.0 else 0.75 end as criticality_weight,
+supplier_id
+from supply_alert_catalog.silver.products

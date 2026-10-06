@@ -1,0 +1,5 @@
+CREATE OR REPLACE TABLE supply_alert_catalog.silver.locations AS
+select upper(trim(location_id)) as location_id, 
+trim(location_name) as location_name, 
+trim(region) as region
+from supply_alert_catalog.bronze.locations

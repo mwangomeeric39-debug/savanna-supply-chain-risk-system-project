@@ -1,0 +1,8 @@
+create or replace table supply_alert_catalog.gold.dim_customers as 
+
+SELECT
+    customer_id,
+    customer_name,
+    segment,
+    location_id
+FROM supply_alert_catalog.silver.customers

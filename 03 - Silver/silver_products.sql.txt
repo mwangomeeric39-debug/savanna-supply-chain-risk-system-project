@@ -1,0 +1,8 @@
+CREATE OR REPLACE TABLE supply_alert_catalog.silver.products AS
+select upper(trim(sku)) as sku, 
+trim(product_name) as product_name, 
+trim(category) as category,
+try_cast(unit_cost as decimal(12,2)) as unit_cost, 
+try_cast(unit_price as decimal(12,2)) as unit_price,
+upper(trim(criticality)) as criticality, upper(trim(supplier_id)) as supplier_id
+from supply_alert_catalog.bronze.products

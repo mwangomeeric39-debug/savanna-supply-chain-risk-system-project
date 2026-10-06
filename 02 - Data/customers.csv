@@ -1,0 +1,61 @@
+customer_id,customer_name,segment,location_id
+CUS-001,Customer 001,Supermarket Chain,LOC-NBO
+CUS-002,Customer 002,Supermarket Chain,LOC-NBO
+CUS-003,Customer 003,Supermarket Chain,LOC-NBO
+CUS-004,Customer 004,Supermarket Chain,LOC-NBO
+CUS-005,Customer 005,Supermarket Chain,LOC-NBO
+CUS-006,Customer 006,Supermarket Chain,LOC-NBO
+CUS-007,Customer 007,Wholesaler,LOC-NBO
+CUS-008,Customer 008,Wholesaler,LOC-NBO
+CUS-009,Customer 009,Wholesaler,LOC-NBO
+CUS-010,Customer 010,Wholesaler,LOC-NBO
+CUS-011,Customer 011,Wholesaler,LOC-NBO
+CUS-012,Customer 012,Wholesaler,LOC-NBO
+CUS-013,Customer 013,Wholesaler,LOC-NBO
+CUS-014,Customer 014,Wholesaler,LOC-NBO
+CUS-015,Customer 015,Institution,LOC-NBO
+CUS-016,Customer 016,Institution,LOC-NBO
+CUS-017,Customer 017,Institution,LOC-NBO
+CUS-018,Customer 018,Institution,LOC-NBO
+CUS-019,Customer 019,Institution,LOC-NBO
+CUS-020,Customer 020,Institution,LOC-NBO
+CUS-021,Customer 021,Supermarket Chain,LOC-MSA
+CUS-022,Customer 022,Supermarket Chain,LOC-MSA
+CUS-023,Customer 023,Supermarket Chain,LOC-MSA
+CUS-024,Customer 024,Supermarket Chain,LOC-MSA
+CUS-025,Customer 025,Supermarket Chain,LOC-MSA
+CUS-026,Customer 026,Supermarket Chain,LOC-MSA
+CUS-027,Customer 027,Wholesaler,LOC-MSA
+CUS-028,Customer 028,Wholesaler,LOC-MSA
+CUS-029,Customer 029,Wholesaler,LOC-MSA
+CUS-030,Customer 030,Wholesaler,LOC-MSA
+CUS-031,Customer 031,Wholesaler,LOC-MSA
+CUS-032,Customer 032,Wholesaler,LOC-MSA
+CUS-033,Customer 033,Wholesaler,LOC-MSA
+CUS-034,Customer 034,Wholesaler,LOC-MSA
+CUS-035,Customer 035,Institution,LOC-MSA
+CUS-036,Customer 036,Institution,LOC-MSA
+CUS-037,Customer 037,Institution,LOC-MSA
+CUS-038,Customer 038,Institution,LOC-MSA
+CUS-039,Customer 039,Institution,LOC-MSA
+CUS-040,Customer 040,Institution,LOC-MSA
+CUS-041,Customer 041,Supermarket Chain,LOC-KSM
+CUS-042,Customer 042,Supermarket Chain,LOC-KSM
+CUS-043,Customer 043,Supermarket Chain,LOC-KSM
+CUS-044,Customer 044,Supermarket Chain,LOC-KSM
+CUS-045,Customer 045,Supermarket Chain,LOC-KSM
+CUS-046,Customer 046,Supermarket Chain,LOC-KSM
+CUS-047,Customer 047,Wholesaler,LOC-KSM
+CUS-048,Customer 048,Wholesaler,LOC-KSM
+CUS-049,Customer 049,Wholesaler,LOC-KSM
+CUS-050,Customer 050,Wholesaler,LOC-KSM
+CUS-051,Customer 051,Wholesaler,LOC-KSM
+CUS-052,Customer 052,Wholesaler,LOC-KSM
+CUS-053,Customer 053,Wholesaler,LOC-KSM
+CUS-054,Customer 054,Wholesaler,LOC-KSM
+CUS-055,Customer 055,Institution,LOC-KSM
+CUS-056,Customer 056,Institution,LOC-KSM
+CUS-057,Customer 057,Institution,LOC-KSM
+CUS-058,Customer 058,Institution,LOC-KSM
+CUS-059,Customer 059,Institution,LOC-KSM
+CUS-060,Customer 060,Institution,LOC-KSM
