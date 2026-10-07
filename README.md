@@ -557,23 +557,6 @@ The n8n configuration is available under:
 You will need to configure your own Databricks and email credentials.
 
 **Never use credentials from this repository.**
-
----
-
-# Important Note About Credentials
-
-This repository is intended to be public.
-
-Therefore:
-
-* Do not commit Databricks personal access tokens.
-* Do not commit Gmail credentials.
-* Do not commit API keys.
-* Do not commit passwords.
-* Do not commit `.env` files containing secrets.
-
-Configure your own credentials when reproducing the automation.
-
 ---
 
 # What This Project Demonstrates
